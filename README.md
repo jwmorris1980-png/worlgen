@@ -1,4 +1,7 @@
-# worldgen - walkable 3D worlds from text, entirely local
+# worlgen - walkable 3D worlds from text, entirely local
+
+The name is spelled **worlgen** on purpose: "worldgen" is too common.
+(The local folder is still called `worldgen`; only the project name differs.)
 
 Type a prompt, get a world you can walk around in. Runs on one PC with ComfyUI;
 no cloud services, no API keys.
