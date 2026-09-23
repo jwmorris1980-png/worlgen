@@ -1,0 +1,68 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": { "unet_name": "z_image_turbo_int8_convrot.safetensors", "weight_dtype": "default" }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "qwen_3_4b_fp4_mixed.safetensors", "type": "lumina2", "device": "default" }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "ae.safetensors" }
+  },
+  "4": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": { "model": ["1", 0], "shift": 3.0 }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["2", 0],
+      "text": "equirectangular 360 degree spherical panorama, ancient overgrown stone temple courtyard at golden hour, moss covered pillars and broken archways, distant mountain range on a level horizon, continuous unbroken scenery, no vertical seam, no hard edge, consistent sky, video game environment art, highly detailed"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "clip": ["2", 0], "text": "seam, split, discontinuity, mismatched halves, text, watermark" }
+  },
+  "7": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "pano_rolled.png", "upload": "image" }
+  },
+  "8": {
+    "class_type": "VAEEncode",
+    "inputs": { "pixels": ["7", 0], "vae": ["3", 0] }
+  },
+  "12": {
+    "class_type": "LoadImageMask",
+    "inputs": { "image": "seam_mask.png", "channel": "red", "upload": "image" }
+  },
+  "13": {
+    "class_type": "SetLatentNoiseMask",
+    "inputs": { "samples": ["8", 0], "mask": ["12", 0] }
+  },
+  "9": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["4", 0],
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "latent_image": ["13", 0],
+      "seed": 4410231,
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 0.85
+    }
+  },
+  "10": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["9", 0], "vae": ["3", 0] }
+  },
+  "11": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["10", 0], "filename_prefix": "pano_healed" }
+  }
+}

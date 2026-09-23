@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Builder</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#07090c;
+    font:13px/1.5 ui-sans-serif, system-ui, Segoe UI, Roboto, sans-serif; color:#e8e6e1; }
+  canvas { display:block; }
+  .panel { position:fixed; z-index:5; background:rgba(11,13,17,.86); border:1px solid #262b34;
+    border-radius:10px; padding:11px 13px; backdrop-filter:blur(10px); }
+  #hud { left:14px; bottom:14px; width:255px; }
+  #objects { right:14px; top:14px; width:225px; max-height:calc(100vh - 28px); overflow:auto; }
+  h2 { font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:#8b94a3;
+    margin:0 0 9px; font-weight:600; }
+  label { display:block; font-size:.74rem; color:#8b94a3; margin:8px 0 3px; }
+  select, button, input[type=range], input[type=text] { width:100%; background:#151a21; color:#e8e6e1;
+    border:1px solid #262b34; border-radius:6px; padding:6px 8px; font:inherit; }
+  button { cursor:pointer; font-weight:600; }
+  button.primary { background:#c98f4f; color:#151109; border-color:transparent; }
+  button:disabled { opacity:.45; cursor:default; }
+  .row { display:flex; gap:6px; margin-top:7px; }
+  .row > * { flex:1; }
+  .keys { margin-top:9px; font-size:.71rem; color:#6f7885; line-height:1.65; }
+  .keys b { color:#b9c1cd; font-weight:600; }
+  #list { list-style:none; margin:0; padding:0; }
+  #list li { padding:5px 7px; border-radius:5px; cursor:pointer; font-size:.76rem;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #list li:hover { background:#181d25; }
+  #list li.sel { background:#c98f4f; color:#151109; font-weight:600; }
+  #empty { color:#6f7885; font-size:.74rem; }
+  #status { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:6;
+    text-align:center; color:#8b94a3; pointer-events:none; white-space:pre-line; }
+  #status.err { color:#e08a7c; max-width:min(90vw,520px); }
+  #toast { position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:7;
+    background:rgba(11,13,17,.92); border:1px solid #262b34; border-radius:8px;
+    padding:8px 14px; display:none; }
+  #cross { position:fixed; top:50%; left:50%; width:5px; height:5px; margin:-2.5px 0 0 -2.5px;
+    border-radius:50%; background:#fff8; z-index:4; display:none; }
+  #cross.on { display:block; }
+  #drop { position:fixed; inset:0; z-index:8; display:none; place-items:center;
+    background:rgba(7,9,12,.8); border:3px dashed #c98f4f; font-size:1.1rem; color:#e8c9a2; }
+  #drop.on { display:grid; }
+</style>
+</head>
+<body>
+<div id="cross"></div>
+<div id="status">Loading…</div>
+<div id="toast"></div>
+<div id="drop">Drop .glb files to add them to this world</div>
+
+<div id="objects" class="panel">
+  <h2>In this world</h2>
+  <ul id="list"></ul>
+  <p id="empty">Nothing placed yet.<br>Drag a .glb onto the page.</p>
+</div>
+
+<div id="hud" class="panel">
+  <h2>World Builder</h2>
+  <label for="newPrompt">Make a new world</label>
+  <input id="newPrompt" type="text" placeholder="a flooded subway station at dusk">
+  <button id="build" class="primary" style="margin-top:7px">Build it</button>
+  <div id="buildStatus" class="keys" style="display:none"></div>
+
+  <label for="pick">World</label>
+  <select id="pick"></select>
+  <label for="props">Add a prop</label>
+  <select id="props"><option value="">— library empty —</option></select>
+  <label for="speed">Walk speed <span id="speedOut">1.4</span> m/s</label>
+  <input id="speed" type="range" min="0.3" max="6" step="0.1" value="1.4">
+  <div class="row">
+    <button id="mode" class="primary">Walk</button>
+    <button id="save">Save</button>
+  </div>
+  <div class="keys" id="help"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./lib/three.module.js",
+    "three/addons/": "./lib/jsm/"
+  }
+}
+</script>
+<!-- Version the URL. An earlier server build sent a week-long Cache-Control for
+     .js, so browsers hold a stale app.js and will not revalidate it no matter
+     what the server says now. Changing the query string changes the cache key.
+     Bump this whenever app.js changes in a way that must reach an old tab. -->
+<script type="module" src="./app.js?v=23"></script>
+</body>
+</html>

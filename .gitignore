@@ -1,0 +1,9 @@
+# Generated worlds are 8-90 MB each - too big for git. Regenerate with worldgen.py.
+worlds/*.glb
+# Raw Hunyuan3D output (16 MB); props/hero.glb is the cleaned copy
+props/*_raw.glb
+# Backups, caches, scratch
+*.bak*
+__pycache__/
+_*.py
+/look.js
