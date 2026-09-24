@@ -6,7 +6,12 @@ The name is spelled **worlgen** on purpose: "worldgen" is too common.
 Type a prompt, get a world you can walk around in. Runs on one PC with ComfyUI;
 no cloud services, no API keys.
 
-    python serve.py        # then open http://127.0.0.1:8777/viewer/
+Double-click **worlgen.bat**. That's the only thing to start: it opens the site,
+and pressing *Build it* starts the 3D engine (ComfyUI's backend, headless - no
+window, no web UI) by itself, then stops it a few minutes after the build so it
+frees RAM and VRAM. Closing the worlgen window stops everything.
+
+    worlgen.bat            # or: python serve.py, then http://127.0.0.1:8777/viewer/
 
 Pipeline (worldgen.py, driven through ComfyUI's HTTP API on port 8189):
 Z-Image-Turbo panorama -> seam repair (masked inpaint) -> MoGe 360 depth -> textured GLB.

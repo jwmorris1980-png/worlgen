@@ -7,3 +7,5 @@ props/*_raw.glb
 __pycache__/
 _*.py
 /look.js
+# engine output
+engine.log

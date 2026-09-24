@@ -63,7 +63,11 @@ def run_build(subject, name):
         with JOB_LOCK:
             JOB.update(state="running", message="Starting", world=None,
                        error=None, result=None)
-        out = worldgen.build_world(subject, name, on_progress=progress)
+        import engine
+        # Starts the 3D engine only if it isn't already running, and stops it
+        # again a few minutes after the build so it frees RAM and VRAM.
+        with engine.session(progress):
+            out = worldgen.build_world(subject, name, on_progress=progress)
         with JOB_LOCK:
             JOB.update(state="done", message="Finished", world=out["world"], result=out)
     except Exception as exc:
@@ -224,6 +228,12 @@ def main():
             httpd.serve_forever()
         except KeyboardInterrupt:
             print("\nstopped")
+        finally:
+            try:
+                import engine
+                engine.shutdown()          # never leave our engine holding VRAM
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

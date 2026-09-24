@@ -230,10 +230,11 @@ function fitWorld(root) {
 const texLoader = new THREE.TextureLoader();
 let floorMesh = null;
 
-async function setBackdrop(worldFile) {
+async function setBackdrop(worldFile, token) {
   const jpg = '../worlds/' + encodeURIComponent(worldFile.replace(/\.glb$/i, '.jpg'));
   try {
     const tex = await texLoader.loadAsync(jpg);
+    if (token !== undefined && stale(token)) return;
     tex.mapping = THREE.EquirectangularReflectionMapping;
     tex.colorSpace = THREE.SRGBColorSpace;
     scene.background = tex;
@@ -279,20 +280,34 @@ function addFloor(tex) {
   scene.add(floorMesh);
 }
 
+// Only the NEWEST load may finish. Two loads overlapping (the page booting while
+// a finished build loads its new world, or a quick second pick in the list)
+// used to leave both worlds in the scene, and could pair one world's backdrop
+// with the other world's mesh.
+let loadToken = 0;
+const stale = (t) => t !== loadToken;
+
 async function loadWorld(name) {
+  const token = ++loadToken;
   say('Loading ' + name + ' …');
-  if (worldMesh) { scene.remove(worldMesh); worldMesh = null; }
+  for (const o of [...scene.children]) if (o.userData.isWorldRoot) scene.remove(o);
+  worldMesh = null;
   clearProps();
-  await setBackdrop(name);      // instant: gives you something to look at
+  await setBackdrop(name, token);  // instant: gives you something to look at
+  if (stale(token)) return;
   try {
     const gltf = await loader.loadAsync('../worlds/' + encodeURIComponent(name), (e) => {
       if (e.lengthComputable) say('Loading… ' + Math.round((e.loaded / e.total) * 100) + '%');
       else say('Loading… ' + (e.loaded / 1048576).toFixed(1) + ' MB');
     });
+    if (stale(token)) return;          // a newer world was picked meanwhile
     worldMesh = gltf.scene;
+    worldMesh.userData.isWorldRoot = true;
     fitWorld(worldMesh);
     accelerate(worldMesh);        // BVH: every floor/camera probe becomes cheap
     scene.add(worldMesh);
+    document.body.dataset.worlds = JSON.stringify({ loaded: name,
+      inScene: scene.children.filter((o) => o.userData.isWorldRoot).length });
     worldName = name;
     vel.set(0, 0, 0);
 
@@ -324,6 +339,7 @@ async function loadWorld(name) {
 
     // Stand the hero at the capture point, on that floor.
     if (!hero) await loadHero();
+    if (stale(token)) return;
     hero.position.set(0, floorLevel, 0);
     heroGroundY = null;
     heroYaw = 0;
@@ -711,8 +727,8 @@ addEventListener('blur', () => held.clear());
 // height. Standing at that height puts your eyes exactly where the shot was
 // taken, which is the one height at which the scene looks undistorted.
 let EYE = EYE_METRES;
-const downRay = new THREE.Raycaster();
-downRay.firstHitOnly = true;
+const downRay = new THREE.Raycaster();   // all hits: groundAt skips non-floor ones
+const standN = new THREE.Vector3();
 const DOWN = new THREE.Vector3(0, -1, 0);
 let groundY = null;
 let lastProbe = 0;
@@ -855,7 +871,15 @@ function groundAt(x, z, fromY) {
     probeFrom.set(x + ox, start, z + oz);
     downRay.set(probeFrom, DOWN);
     downRay.far = STEP_UP + STEP_DOWN + 1.2;
-    const hit = downRay.intersectObject(worldMesh, true)[0];   // nearest below
+    // Nearest surface below that you can STAND on: facing up like a floor or a
+    // stair tread. Leaves, rubble and sloped junk are walked through, not
+    // climbed - otherwise the hero steps up a fern one frond at a time.
+    let hit = null;
+    for (const h of downRay.intersectObject(worldMesh, true)) {
+      if (!h.face) { hit = h; break; }
+      standN.copy(h.face.normal).transformDirection(h.object.matrixWorld);
+      if (Math.abs(standN.y) >= 0.75) { hit = h; break; }
+    }
     if (hit && (best === null || hit.point.y > best)) best = hit.point.y;
   }
   return best;
